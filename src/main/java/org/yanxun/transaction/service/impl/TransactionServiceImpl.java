@@ -76,6 +76,10 @@ public class TransactionServiceImpl implements TransactionService {
                 throw new TransactionException(TransactionStatusCode.ACCOUNT_STATUS_ERROR);
             }
 
+            if(!accountInfo.getUserId().equals(request.getUserId())){
+                throw new TransactionException(TransactionStatusCode.TRANSACTION_CREATE_FAILED, "当前账户不属于该用户！");
+            }
+
             //需要给转入和转出账户都上锁，保证线程安全
             synchronized (accountInfo) {
                 synchronized (inAccountInfo) {
@@ -157,9 +161,9 @@ public class TransactionServiceImpl implements TransactionService {
                 throw new TransactionException(TransactionStatusCode.TRANSACTION_NOT_FOUND);
             }
             //只有待处理的交易才能修改
-            if (!transaction.getState().equals(0)) {
-                throw new TransactionException(TransactionStatusCode.TRANSACTION_STATUS_ERROR);
-            }
+//            if (!transaction.getState().equals(0)) {
+//                throw new TransactionException(TransactionStatusCode.TRANSACTION_STATUS_ERROR);
+//            }
 
             //转出账户
             AccountInfoEntity accountInfo = accountInfoRepository.getAccountInfo(request.getAccountInfoId());
@@ -178,12 +182,21 @@ public class TransactionServiceImpl implements TransactionService {
             }
 
             synchronized (transaction){
+                //将原交易的金额反向交易回账户，转出金额加回原交易金额
+                accountInfo.setBalance(accountInfo.getBalance().add(transaction.getAmount()));
+                //转入金额减去原交易金额
+                inAccountInfo.setBalance(accountInfo.getBalance().subtract(transaction.getAmount()));
+
+                //修改交易单
                 transaction.setTransactionType(request.getTransactionType());
                 transaction.setAmount(request.getAmount());
                 transaction.setCurrency(request.getCurrency());
                 transaction.setUserId(request.getUserId());
                 transaction.setAccountInfoId(request.getAccountInfoId());
                 transaction.setUpdateTime(LocalDateTime.now());
+
+
+
                 //生成一条转出流水
                 FundFlowEntity outFundFlow = FundFlowEntity.builder()
                         .currency(request.getCurrency())
@@ -209,6 +222,10 @@ public class TransactionServiceImpl implements TransactionService {
                         .build();
                 //更新交易流水
                 transaction.setFundFlowList(List.of(outFundFlow, inFundFlow));
+
+                //用最新的交易单更新账户信息
+                accountInfo.setBalance(accountInfo.getBalance().subtract(request.getAmount()));
+                inAccountInfo.setBalance(inAccountInfo.getBalance().add(request.getAmount()));
             }
             return Response.builder()
                     .code(TransactionStatusCode.TRANSACTION_SUCCESS.getCode())
