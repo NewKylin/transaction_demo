@@ -30,7 +30,7 @@ docker build -t transactionapp:1.0.0 .
 docker run -d -p 8080:8080 --name transaction transactionapp:1.0.0
 ````
 
-## 接口访问方法
+## 接口访问方式
 
 ### 创建交易接口：本机地址:端口/transaction/create
 
