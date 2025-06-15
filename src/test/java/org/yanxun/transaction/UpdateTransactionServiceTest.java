@@ -56,7 +56,6 @@ class UpdateTransactionServiceTest {
 //
         // 初始化存在的交易
         existingTransaction = TransactionEntity.builder()
-                .id(1L)
                 .transactionNo("TRANS123")
                 .transactionType(1)
                 .amount(new BigDecimal("50.00"))

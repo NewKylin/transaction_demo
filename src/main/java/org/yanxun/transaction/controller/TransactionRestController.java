@@ -9,8 +9,6 @@ import org.yanxun.transaction.vo.request.UpdateTransactionRequest;
 import org.yanxun.transaction.vo.response.Response;
 import org.yanxun.transaction.vo.response.TransactionPageResponse;
 
-import java.util.UUID;
-
 /**
  * 交易接口
  * @author yanxun
@@ -18,11 +16,11 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/transaction")
-public class TransactionResController {
+public class TransactionRestController {
 
     private final TransactionService transactionService;
 
-    public TransactionResController(TransactionService transactionService) {
+    public TransactionRestController(TransactionService transactionService) {
         this.transactionService = transactionService;
     }
 
