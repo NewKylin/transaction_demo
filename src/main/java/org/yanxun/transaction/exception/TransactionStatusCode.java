@@ -17,6 +17,7 @@ public enum TransactionStatusCode {
     TRANSACTION_STATUS_ERROR(1008, "交易状态错误"),
     TRANSACTION_UPDATE_FAILED(1009, "更新交易失败"),
     INVALID_PARAM(1010, "参数不合法"),
+    SYSTEM_ERROR(400, "系统异常"),
     ;
 
     private final int code;

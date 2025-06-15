@@ -289,29 +289,41 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public Response<PageResponse<TransactionPageResponse>> pageTransaction(TransactionPageRequest request) {
 
-        if(request.getPageIndex() == null || request.getPageIndex() <= 0){
-            throw new TransactionException(TransactionStatusCode.INVALID_PARAM,"页码不能为空或者小于0");
-        }
-        if(request.getPageSize() == null || request.getPageSize() <= 0){
-            throw new TransactionException(TransactionStatusCode.INVALID_PARAM,"页大小不能为空或者小于0");
-        }
-        //TODO:这里应该还要校验传参的用户是否当前登录人，否则会有数据横向越权的风险。但是因为没有包含登录部分的内容，所以这里先不处理
-        if(request.getUserId() == null){
-            throw new TransactionException(TransactionStatusCode.INVALID_PARAM,"用户ID不能为空");
-        }
+        try {
+            if(request.getPageIndex() == null || request.getPageIndex() <= 0){
+                throw new TransactionException(TransactionStatusCode.INVALID_PARAM,"页码不能为空或者小于0");
+            }
+            if(request.getPageSize() == null || request.getPageSize() <= 0){
+                throw new TransactionException(TransactionStatusCode.INVALID_PARAM,"页大小不能为空或者小于0");
+            }
+            //TODO:这里应该还要校验传参的用户是否当前登录人，否则会有数据横向越权的风险。但是因为没有包含登录部分的内容，所以这里先不处理
+            if(request.getUserId() == null){
+                throw new TransactionException(TransactionStatusCode.INVALID_PARAM,"用户ID不能为空");
+            }
 
-        Long totalRecord = transactionRepository.countTransaction(request);
-        if(totalRecord <= 0){
-            return Response.success(null);
+            Long totalRecord = transactionRepository.countTransaction(request);
+            if(totalRecord <= 0){
+                return Response.success(null);
+            }
+
+            List<TransactionEntity> transactionEntityList = transactionRepository.queryTransaction(request);
+
+            return Response.success(PageResponse.<TransactionPageResponse>builder()
+                    .pageNum(totalRecord / request.getPageSize() + 1)
+                    .totalRecord(totalRecord)
+                    .data(transactionEntityList.stream().map(this::convertTransactionEntityToTransactionPageResponse).toList())
+                    .build());
+        } catch (TransactionException e) {
+            return Response.<PageResponse<TransactionPageResponse>>builder()
+                    .message(e.getMessage())
+                    .code(e.getErrorCode().getCode())
+                    .build();
+        } catch (Exception e){
+            return Response.<PageResponse<TransactionPageResponse>>builder()
+                    .message("系统异常，请稍后再试！")
+                    .code(TransactionStatusCode.SYSTEM_ERROR.getCode())
+                    .build();
         }
-
-        List<TransactionEntity> transactionEntityList = transactionRepository.queryTransaction(request);
-
-        return Response.success(PageResponse.<TransactionPageResponse>builder()
-                .pageNum(totalRecord / request.getPageSize() + 1)
-                .totalRecord(totalRecord)
-                .data(transactionEntityList.stream().map(this::convertTransactionEntityToTransactionPageResponse).toList())
-                .build());
     }
 
     /**
