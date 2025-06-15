@@ -80,7 +80,7 @@ public class TransactionServiceImpl implements TransactionService {
                 throw new TransactionException(TransactionStatusCode.TRANSACTION_CREATE_FAILED, "当前账户不属于该用户！");
             }
 
-            //需要给转入和转出账户都上锁，保证线程安全
+            //需要给转入和转出账户都上锁，保证线程安全。演示demo，实际业务中使用分布式锁。
             synchronized (accountInfo) {
                 synchronized (inAccountInfo) {
                     if (request.getTransactionType().equals(1) && accountInfo.getBalance().compareTo(request.getAmount()) < 0) {
@@ -181,6 +181,7 @@ public class TransactionServiceImpl implements TransactionService {
                 throw new TransactionException(TransactionStatusCode.ACCOUNT_STATUS_ERROR);
             }
 
+            //演示demo，实际业务中使用分布式锁。
             synchronized (transaction){
                 //需要给转入和转出账户都上锁，保证线程安全
                 synchronized (accountInfo) {
