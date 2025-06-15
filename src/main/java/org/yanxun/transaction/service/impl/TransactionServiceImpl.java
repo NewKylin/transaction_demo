@@ -182,50 +182,53 @@ public class TransactionServiceImpl implements TransactionService {
             }
 
             synchronized (transaction){
-                //将原交易的金额反向交易回账户，转出金额加回原交易金额
-                accountInfo.setBalance(accountInfo.getBalance().add(transaction.getAmount()));
-                //转入金额减去原交易金额
-                inAccountInfo.setBalance(accountInfo.getBalance().subtract(transaction.getAmount()));
+                //需要给转入和转出账户都上锁，保证线程安全
+                synchronized (accountInfo) {
+                    synchronized (inAccountInfo) {
+                        //将原交易的金额反向交易回账户，转出金额加回原交易金额
+                        accountInfo.setBalance(accountInfo.getBalance().add(transaction.getAmount()));
+                        //转入金额减去原交易金额
+                        inAccountInfo.setBalance(accountInfo.getBalance().subtract(transaction.getAmount()));
 
-                //修改交易单
-                transaction.setTransactionType(request.getTransactionType());
-                transaction.setAmount(request.getAmount());
-                transaction.setCurrency(request.getCurrency());
-                transaction.setUserId(request.getUserId());
-                transaction.setAccountInfoId(request.getAccountInfoId());
-                transaction.setUpdateTime(LocalDateTime.now());
+                        //修改交易单
+                        transaction.setTransactionType(request.getTransactionType());
+                        transaction.setAmount(request.getAmount());
+                        transaction.setCurrency(request.getCurrency());
+                        transaction.setUserId(request.getUserId());
+                        transaction.setAccountInfoId(request.getAccountInfoId());
+                        transaction.setUpdateTime(LocalDateTime.now());
 
+                        //生成一条转出流水
+                        FundFlowEntity outFundFlow = FundFlowEntity.builder()
+                                .currency(request.getCurrency())
+                                .cardNo(accountInfo.getCardNo())
+                                .accountInfoId(accountInfo.getId())
+                                .balanceBefore(accountInfo.getBalance())
+                                .balanceAfter(accountInfo.getBalance().subtract(request.getAmount()))
+                                .directionType(1)
+                                .amount(request.getAmount())
+                                .currency(request.getCurrency())
+                                .build();
 
+                        //生成一条转入流水
+                        FundFlowEntity inFundFlow = FundFlowEntity.builder()
+                                .currency(request.getCurrency())
+                                .cardNo(inAccountInfo.getCardNo())
+                                .accountInfoId(accountInfo.getId())
+                                .balanceBefore(inAccountInfo.getBalance())
+                                .balanceAfter(inAccountInfo.getBalance().add(request.getAmount()))
+                                .directionType(2)
+                                .amount(request.getAmount())
+                                .currency(request.getCurrency())
+                                .build();
+                        //更新交易流水
+                        transaction.setFundFlowList(List.of(outFundFlow, inFundFlow));
 
-                //生成一条转出流水
-                FundFlowEntity outFundFlow = FundFlowEntity.builder()
-                        .currency(request.getCurrency())
-                        .cardNo(accountInfo.getCardNo())
-                        .accountInfoId(accountInfo.getId())
-                        .balanceBefore(accountInfo.getBalance())
-                        .balanceAfter(accountInfo.getBalance().subtract(request.getAmount()))
-                        .directionType(1)
-                        .amount(request.getAmount())
-                        .currency(request.getCurrency())
-                        .build();
-
-                //生成一条转入流水
-                FundFlowEntity inFundFlow = FundFlowEntity.builder()
-                        .currency(request.getCurrency())
-                        .cardNo(inAccountInfo.getCardNo())
-                        .accountInfoId(accountInfo.getId())
-                        .balanceBefore(inAccountInfo.getBalance())
-                        .balanceAfter(inAccountInfo.getBalance().add(request.getAmount()))
-                        .directionType(2)
-                        .amount(request.getAmount())
-                        .currency(request.getCurrency())
-                        .build();
-                //更新交易流水
-                transaction.setFundFlowList(List.of(outFundFlow, inFundFlow));
-
-                //用最新的交易单更新账户信息
-                accountInfo.setBalance(accountInfo.getBalance().subtract(request.getAmount()));
-                inAccountInfo.setBalance(inAccountInfo.getBalance().add(request.getAmount()));
+                        //用最新的交易单更新账户信息
+                        accountInfo.setBalance(accountInfo.getBalance().subtract(request.getAmount()));
+                        inAccountInfo.setBalance(inAccountInfo.getBalance().add(request.getAmount()));
+                    }
+                }
             }
             return Response.builder()
                     .code(TransactionStatusCode.TRANSACTION_SUCCESS.getCode())
