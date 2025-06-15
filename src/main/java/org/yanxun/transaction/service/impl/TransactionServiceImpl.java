@@ -137,7 +137,7 @@ public class TransactionServiceImpl implements TransactionService {
             //自定义异常直接通过接口返回状态和错误信息
             return Response.builder()
                     .code(e.getErrorCode().getCode())
-                    .message(e.getErrorCode().getMessage())
+                    .message(e.getMessage())
                     .build();
         } catch (Exception e){
             //系统异常统一返回交易失败，并且打印日志，注意屏蔽敏感信息。
