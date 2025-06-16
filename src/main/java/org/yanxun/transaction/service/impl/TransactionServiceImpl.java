@@ -91,6 +91,8 @@ public class TransactionServiceImpl implements TransactionService {
                         throw new TransactionException(TransactionStatusCode.ACCOUNT_NOT_ENOUGH_BALANCE);
                     }
                     //注意：以下需要保持事务，因为本次设计不涉及数据持久化，所以省略数据库事务。如果做持久化，通过事务的控制可以保证原子性和一致性
+                    //如果是跨行的转账交易，可以基于2pc或者TCC实现事务的一致性。常见的方案是2pc + 领域事件驱动 + 本地事务表。
+
                     //生成一条转出流水
                     FundFlowEntity outFundFlow = FundFlowEntity.builder()
                             .currency(request.getCurrency())
