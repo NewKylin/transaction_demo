@@ -51,6 +51,10 @@ public class TransactionServiceImpl implements TransactionService {
         try {
             //参数基础验证
             request.checkParam();
+            //目前只支持转账一种交易类型
+            if (!request.getTransactionType().equals(1)) {
+                throw new TransactionException(TransactionStatusCode.INVALID_TRANSACTION_DATA, "目前只支持转账交易类型！");
+            }
             //防重校验
             if(EXECUTE_OPS.putIfAbsent(request.getTransactionNo(), true) != null){
                 throw new TransactionException(TransactionStatusCode.TRANSACTION_DUPLICATE);

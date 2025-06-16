@@ -20,7 +20,7 @@ public class CreateTransactionRequest {
     private String transactionNo;
 
     /**
-     * 交易类型（1:支付，2：退款）
+     * 交易类型（1:转账，2：退款）
      */
     private Integer transactionType;
 
